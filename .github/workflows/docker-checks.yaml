@@ -78,4 +78,4 @@ jobs:
           echo "| code-scan       | $CODE_SCAN_STATUS |" >> $GITHUB_STEP_SUMMARY
           echo "| docker-scan       | $DOCKER_SCAN_STATUS |" >> $GITHUB_STEP_SUMMARY
           
-#updates
+#updates 2
