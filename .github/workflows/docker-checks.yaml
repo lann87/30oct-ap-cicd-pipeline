@@ -45,6 +45,12 @@ jobs:
       - name: Docker build and tag
         run: |
             docker build -t simple-docker-image:latest .
+
+      - name: Authenticate with GH Packages
+        env:
+          GHCR_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${GHCR_PAT}" | docker login ghcr.io -u USERNAME --password-stdin
+        
       - name: Run image scan
         uses: aquasecurity/trivy-action@master
         with:
