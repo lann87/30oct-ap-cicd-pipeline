@@ -7,20 +7,15 @@
 **Date**: 30 Oct  
 **Author**: Alan Peh  
 
-## Simple DevOps Pipeline Setup Guide
+## Simple DevOps Pipeline Setup Guide  
 
-### 0. Repository Setup  
-
-    Create new GitHub repository "my-simple-devops-pipeline"  
-    Set up branch protection rules:  
-
-    Go to Settings → Branches → Add rule  
-    Branch name pattern: main (or develop)  
-    Enable "Require a pull request before merging"  
-    Disable "Require approvals"  
-    Block direct pushes to main/develop  
+This project sets up a simple DevOps pipeline to automate infrastructure management and application deployment using GitHub Actions.  
+Key components include Terraform configurations for AWS resources, a Docker containerized application, and CI/CD workflows for code quality checks, Docker image building, and security scanning.  
+By leveraging automated checks and resource provisioning, the pipeline ensures efficient and secure development and deployment practices.
 
 ### 1. Structure  
+
+Directories for Terraform, Docker, and workflows, automating infrastructure management and containerized application deployment.  
 
 ```sh
 .
@@ -45,6 +40,8 @@
 ```
 
 ### 2. Terraform files  
+
+Configures a simple AWS S3 bucket and backend state storage.  
 
 **main.tf**  
 
@@ -248,6 +245,7 @@ jobs:
 ```yaml
 name: Terraform Checks
 
+# Trigger this workflow on pull requests to the main branch, only when files in the terraform directory change
 on:
   pull_request:
     branches: [ "main" ]
@@ -257,40 +255,51 @@ on:
 jobs:
   Terraform-Checks:
     runs-on: ubuntu-latest
+
+    # Set the working directory for all run commands to the terraform directory
     defaults:
       run:
         working-directory: terraform
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      # Check out the repository's code
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
+      # Set up Terraform for use in the workflow
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
 
-    - name: Terraform fmt check
-      id: fmt
-      run: terraform fmt -check
+      # Check Terraform code formatting
+      - name: Terraform fmt check
+        id: fmt
+        run: terraform fmt -check
 
-    - name: Terraform init
-      run: terraform init -backend=false
+      # Initialize Terraform without configuring the backend
+      - name: Terraform init
+        run: terraform init -backend=false
 
-    - name: Terraform Validate
-      id: validate
-      run: terraform validate -no-color
+      # Validate the Terraform configuration
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
 
-    - uses: terraform-linters/setup-tflint@v3
-      with:
-        tflint_version: latest
-    
-    - name: Show version
-      run: tflint --version
+      # Set up TFLint for Terraform linting
+      - uses: terraform-linters/setup-tflint@v3
+        with:
+          tflint_version: latest
 
-    - name: Init TFLint
-      run: tflint --init
+      # Show the installed TFLint version
+      - name: Show version
+        run: tflint --version
 
-    - name: Run TFLint
-      run: tflint -f compact
+      # Initialize TFLint to download rules and configure it
+      - name: Init TFLint
+        run: tflint --init
+
+      # Run TFLint to check for issues in Terraform code
+      - name: Run TFLint
+        run: tflint -f compact
 
 ```
 
@@ -299,6 +308,7 @@ jobs:
 ```yaml
 name: Terraform Plan
 
+# Trigger this workflow on pull requests to the main branch, only when files in the terraform directory change
 on:
   pull_request:
     branches: [ "main" ]
@@ -308,29 +318,37 @@ on:
 jobs:
   Terraform-Plan:
     runs-on: ubuntu-latest
+
+    # Set the working directory for all run commands to the terraform directory
     defaults:
       run:
         working-directory: terraform
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      # Check out the repository's code
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+      # Set up Terraform for use in the workflow
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}         
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1   
-        
-    - name: Terraform Init
-      run: terraform init
+      # Configure AWS credentials using secrets for authentication
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    - name: Terraform Plan
-      run: terraform plan
+      # Initialize Terraform, setting up the environment and loading configurations
+      - name: Terraform Init
+        run: terraform init
+
+      # Generate and display the Terraform execution plan
+      - name: Terraform Plan
+        run: terraform plan
+
 ```
 
 ### Additions - Github Credential Personal Access Token for Trivy  
@@ -338,6 +356,3 @@ jobs:
 ![Alt Text](https://github.com/lann87/30oct-ap-cicd-pipeline/blob/main/resource/30oct-pat-trivy-cicd.png)
 
 ![Alt Text](https://github.com/lann87/30oct-ap-cicd-pipeline/blob/main/resource/30oct-pat-for-trivy.png)
-
-
-### GH Actions CI/CD Pipeline
